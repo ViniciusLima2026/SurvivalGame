@@ -1,0 +1,12 @@
+{
+  "name": "rpg-survival-server",
+  "version": "1.0.0",
+  "description": "Servidor de monstros para RPG Survival Online",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
