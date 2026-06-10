@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RPG Survival Online</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- TELA DE LOGIN / CADASTRO -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h1>⚔️ RPG Survival</h1>
+      <p class="subtitle">Um mundo perigoso aguarda você</p>
+
+      <!-- Abas -->
+      <div class="tabs">
+        <button class="tab active" id="tabLogin" onclick="switchTab('login')">Entrar</button>
+        <button class="tab" id="tabRegister" onclick="switchTab('register')">Criar Conta</button>
+      </div>
+
+      <!-- Formulário Login -->
+      <div id="formLogin">
+        <div class="form-group">
+          <label>Nome de usuário</label>
+          <input type="text" id="loginUser" maxlength="16" placeholder="Seu nome..." />
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="loginPass" maxlength="32" placeholder="Sua senha..." />
+        </div>
+        <button class="btn-primary" onclick="doLogin()">⚔️ Entrar no Mundo</button>
+      </div>
+
+      <!-- Formulário Cadastro -->
+      <div id="formRegister" style="display:none;">
+        <div class="form-group">
+          <label>Nome de guerreiro</label>
+          <input type="text" id="regUser" maxlength="16" placeholder="Escolha seu nome..." />
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="regPass" maxlength="32" placeholder="Crie uma senha..." />
+        </div>
+        <div class="form-group">
+          <label>Confirmar senha</label>
+          <input type="password" id="regPass2" maxlength="32" placeholder="Repita a senha..." />
+        </div>
+        <button class="btn-primary" onclick="doRegister()">🛡️ Criar Conta</button>
+      </div>
+
+      <div id="loginError" class="error-msg"></div>
+      <div id="loginLoading" class="loading-msg" style="display:none;">⏳ Carregando...</div>
+    </div>
+  </div>
+
+  <!-- TELA DO JOGO -->
+  <div id="gameScreen" style="display:none;">
+    <div id="hud">
+      <div id="hudLeft">
+        <div class="hud-name" id="hudPlayerName">Guerreiro</div>
+        <div class="stat-bar-wrap">
+          <span>❤️</span>
+          <div class="stat-bar"><div id="hpBar" class="bar-fill hp-fill"></div></div>
+          <span id="hpText">100/100</span>
+        </div>
+        <div class="stat-row">
+          <span>⚔️ Dano: <b id="hudDmg">10</b></span>
+          <span>💰 <b id="hudGold">0</b></span>
+          <span>🏆 Nível: <b id="hudLvl">1</b></span>
+          <span>⭐ XP: <b id="hudXp">0</b></span>
+        </div>
+      </div>
+      <div id="hudRight">
+        <div class="hint">[WASD] Mover &nbsp; [I] Inventário &nbsp; [Click] Atacar</div>
+        <div id="onlinePlayers">👥 Online: <span id="onlineCount">1</span></div>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="inventory" style="display:none;">
+      <div class="inv-header">
+        <span>🎒 Inventário</span>
+        <button onclick="toggleInv()">[I] Fechar</button>
+      </div>
+      <div id="invGrid"></div>
+    </div>
+
+    <div id="messageLog"></div>
+    <button id="logoutBtn" onclick="logout()">Sair</button>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

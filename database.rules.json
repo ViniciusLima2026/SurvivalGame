@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "players": {
+      "$playerId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "monsters": {
+      ".read": true,
+      ".write": true
+    },
+    "coins": {
+      ".read": true,
+      ".write": true
+    },
+    "foods": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

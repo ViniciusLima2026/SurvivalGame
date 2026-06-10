@@ -23,6 +23,8 @@ let fbCoins    = {};
 let fbFoods    = {};
 let dmgNums    = [];
 
+let amHost = false;
+let hostInterval = null;
 let mapTiles = [];
 
 // ─── ABAS LOGIN/CADASTRO ─────────────────────────
@@ -170,6 +172,7 @@ function startGame(profile) {
   db.ref('players').on('value', snap => {
     fbPlayers = snap.val() || {};
     document.getElementById('onlineCount').textContent = Object.keys(fbPlayers).length;
+    checkHost();
   });
 
   db.ref('monsters').on('value', snap => { fbMonsters = snap.val() || {}; });
@@ -216,6 +219,34 @@ function logout() {
   if (myRef) myRef.remove();
   cancelAnimationFrame(animId);
   auth.signOut().then(() => location.reload());
+}
+
+// ─── HOST ────────────────────────────────────────
+function checkHost() {
+  const ids    = Object.keys(fbPlayers).sort();
+  const myKey  = myRef ? myRef.key : null;
+  const should = ids.length > 0 && ids[0] === myKey;
+
+  if (should && !amHost) {
+    amHost = true;
+    console.log('Sou host');
+    // Só limpa e respawna se não há monstros
+    db.ref('monsters').once('value', snap => {
+      if (!snap.exists() || snap.numChildren() === 0) {
+        spawnWave(6);
+      }
+    });
+    // Limpa intervalo antigo antes de criar novo
+    if (hostInterval) clearInterval(hostInterval);
+    hostInterval = setInterval(() => {
+      if (!amHost) { clearInterval(hostInterval); return; }
+      if (Object.keys(fbMonsters).length < 25) spawnWave(3);
+    }, 6000);
+  }
+  if (!should && amHost) {
+    amHost = false;
+    if (hostInterval) { clearInterval(hostInterval); hostInterval = null; }
+  }
 }
 
 // ─── MAPA ────────────────────────────────────────
@@ -331,6 +362,8 @@ function update(dt) {
     }
   }
 
+  if (amHost) moveMonsters();
+
   dmgNums = dmgNums.filter(d => d.life > 0);
   dmgNums.forEach(d => { d.sy -= 0.8; d.life -= 16; });
 
@@ -341,6 +374,76 @@ function update(dt) {
   // Salva perfil permanente a cada 10s
   profileAccum += dt * 1000;
   if (profileAccum > 10000) { profileAccum = 0; saveProfile(); }
+}
+
+// ─── MONSTROS ────────────────────────────────────
+function spawnWave(n) { for (let i=0;i<n;i++) spawnMonster(); }
+
+function spawnMonster() {
+  const angle = Math.random() * Math.PI * 2;
+  const dist  = 300 + Math.random() * 700;
+  const x = Math.max(50, Math.min(WORLD-50, WORLD/2 + Math.cos(angle)*dist));
+  const y = Math.max(50, Math.min(WORLD-50, WORLD/2 + Math.sin(angle)*dist));
+  const elite = Math.random() < 0.2;
+  const ref = db.ref('monsters').push();
+  ref.set({ x, y, hp: elite?60:30, maxHp: elite?60:30, damage: elite?10:5, speed: elite?1.3:0.9, elite });
+}
+
+// Direções aleatórias por monstro (persistem entre frames)
+const monsterDirs = {};
+
+let moveAccum = 0;
+function moveMonsters() {
+  moveAccum += 16;
+  if (moveAccum < 100) return;
+  moveAccum = 0;
+
+  const allP = Object.values(fbPlayers).filter(p => p && p.alive);
+  const updates = {};
+  const CHASE_DIST = 280; // distância para começar a perseguir
+
+  for (const [id, m] of Object.entries(fbMonsters)) {
+    if (!m) continue;
+
+    // Acha jogador mais próximo
+    let cx = null, cy = null, cd = Infinity;
+    for (const p of allP) {
+      const d = Math.hypot(p.x - m.x, p.y - m.y);
+      if (d < cd) { cd = d; cx = p.x; cy = p.y; }
+    }
+
+    let dx, dy;
+
+    if (cx !== null && cd < CHASE_DIST) {
+      // Persegue o jogador
+      dx = cx - m.x;
+      dy = cy - m.y;
+      monsterDirs[id] = null; // reseta direção aleatória
+    } else {
+      // Movimento aleatório — troca de direção a cada ~3s
+      if (!monsterDirs[id] || Math.random() < 0.012) {
+        const angle = Math.random() * Math.PI * 2;
+        monsterDirs[id] = { x: Math.cos(angle), y: Math.sin(angle) };
+      }
+      dx = monsterDirs[id].x;
+      dy = monsterDirs[id].y;
+    }
+
+    const len  = Math.hypot(dx, dy) || 1;
+    const spd  = (m.speed || 1) * 1.4; // 40% mais rápido
+    const newX = Math.max(MR, Math.min(WORLD - MR, m.x + (dx / len) * spd));
+    const newY = Math.max(MR, Math.min(WORLD - MR, m.y + (dy / len) * spd));
+
+    // Se bateu na borda, inverte direção
+    if (newX <= MR || newX >= WORLD - MR || newY <= MR || newY >= WORLD - MR) {
+      monsterDirs[id] = null;
+    }
+
+    updates[`monsters/${id}/x`] = newX;
+    updates[`monsters/${id}/y`] = newY;
+  }
+
+  if (Object.keys(updates).length) db.ref().update(updates);
 }
 
 // ─── COMBATE ─────────────────────────────────────
